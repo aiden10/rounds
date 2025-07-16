@@ -1,0 +1,68 @@
+
+1 minute chess games, the loser gets an upgrade, and it's best of 3/5/7
+
+Game data:
+All the game data will have to be sent across clients to keep them synchronized
+After each move send all of these to the server, then the server forwards it to the opponent and the opponent's client updates all of their
+game variables with the ones from the server.
+    - current game (int)
+    - games won (int)
+    - board state (2d array or string)
+    - black/white (string)
+    - time (float)
+    - upgrades (list of Upgrades), this wouldn't have to be sent each time and would just exist client-side
+
+Time management:
+    Your timer pauses when you send data, and it resumes when you receive data.
+
+Pages:
+    - Home 
+        Allows users to create room or join a room
+        Create Room
+        [TextField] Join button
+    - Game 
+        Shows board and a chat box on the side
+        
+Backend:
+    type Room:
+        id: string
+        sockets: list[Socket]
+        board: string // would be smaller if stored in FEN notation
+        turn: string // string is more readable than a bool, and the slight size increase is negligible
+        p1_wins: int
+        p2_wins: int
+        games_played: int
+        best_of: int
+
+    Store rooms in a dictionary like:
+        {
+            "id1": roomObject1,
+            "id2": roomObject2,
+            ...
+        }
+
+    Endpoints:
+        - ws /rooms/{id}
+            - used to join an existing room
+            // check if room exists and make a socket
+            if id in rooms:
+                room = rooms[id]
+                if len(room.sockets) < 2:
+                    room.sockets.append(websocket)
+                else:
+                    websocket.send(ROOM_FULL_JSON)
+                
+                game_data = await websocket.receive_json()
+                for socket in room.sockets:
+                    await socket.send(game_data)
+
+            else:
+                websocket.send(ROOM_NOT_FOUND_JSON)
+
+        - POST /rooms/create
+            id = get_random_string(ID_SIZE)
+            room = Room(id, [], DEFAULT_BOARD_STRING, "white", 0, 0, 0, data["best_of"])
+            rooms.update({id: room})
+            return {"status": 200, "id": id}
+            After creating the room the client will automatically go to /rooms/{id} with the returned id.         
+
