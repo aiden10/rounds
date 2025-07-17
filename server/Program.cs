@@ -35,41 +35,43 @@ if (app.Environment.IsDevelopment())
 
 app.UseWebSockets(webSocketOptions);
 app.UseHttpsRedirection();
-app.UseCors("AllowAll"); 
+app.UseCors("AllowAll");
 
 app.Map("/ws", async context =>
 {
-    if (context.WebSockets.IsWebSocketRequest)
-    {
-        var roomID = context.Request.Query["id"].ToString();
-        if (string.IsNullOrEmpty(roomID))
-        {
-            context.Response.StatusCode = 400;
-            await context.Response.WriteAsync("Bad room id");
-            return;
-        }
-
-        using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-
-        if (!rooms.ContainsKey(roomID))
-        {
-            context.Response.StatusCode = 400;
-            await context.Response.WriteAsync("Room does not exist");
-            return;
-        }
-        if (rooms[roomID].Sockets.Count >= 2)
-        {
-            context.Response.StatusCode = 400;
-            await context.Response.WriteAsync("Room is full");
-            return;
-        }
-        rooms[roomID].Sockets.Add(webSocket);
-        await EchoLoop(webSocket, rooms[roomID]);
-    }
-    else
+    if (!context.WebSockets.IsWebSocketRequest)
     {
         context.Response.StatusCode = 400;
+        return;
     }
+
+    var roomID = context.Request.Query["id"].ToString();
+    if (string.IsNullOrEmpty(roomID))
+    {
+        context.Response.StatusCode = 400;
+        await context.Response.WriteAsync("Bad room id");
+        return;
+    }
+
+    if (!rooms.ContainsKey(roomID))
+    {
+        context.Response.StatusCode = 400;
+        await context.Response.WriteAsync("Room does not exist");
+        return;
+    }
+
+    if (rooms[roomID].Sockets.Count >= 2)
+    {
+        context.Response.StatusCode = 400;
+        await context.Response.WriteAsync("Room is full");
+        return;
+    }
+
+    var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+    rooms[roomID].Sockets.Add(webSocket);
+
+    Console.WriteLine($"Client connected to room {roomID}. Total clients: {rooms[roomID].Sockets.Count}");
+    await EchoLoop(webSocket, rooms[roomID]);
 });
 
 app.MapPost("/rooms/create", (CreateRoomRequest req) =>
@@ -86,6 +88,7 @@ app.MapPost("/rooms/create", (CreateRoomRequest req) =>
         Sockets: []
     );
     rooms[id] = room;
+    Console.WriteLine($"Room created: {id}");
     return new CreateRoomSuccess(
         StatusCode: 200,
         ID: id
@@ -119,6 +122,7 @@ static async Task EchoLoop(WebSocket socket, Room room)
     }
     await socket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
     room.Sockets.Remove(socket);
+    Console.WriteLine($"Client disconnected from room {room.ID}. Remaining clients: {room.Sockets.Count}");
 }
 
 record Room(string ID, string Board, string Turn, int P1Wins, int P2Wins, int GamesPlayed, int BestOf, List<WebSocket> Sockets);
