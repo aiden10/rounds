@@ -1,12 +1,12 @@
 
-import { Message } from '../app/types';
+import { Message } from '../shared/types';
 
 type ChatBoxProps = {
     messages: Message[];
 }
 
 export default function ChatBox({messages}: ChatBoxProps){
-    return <div className='bg-slate-200 p-5'>
+    return <div className='bg-white p-5'>
         {
             messages.map((message: Message, index: number) => (
                 <div className={message.sender? "chat chat-start": "chat chat-end"} key={index}>

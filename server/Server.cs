@@ -101,6 +101,17 @@ app.Run();
 
 static async Task EchoLoop(WebSocket socket, Room room)
 {
+    int playerIndex = room.Sockets.Count;
+    var roleMessage = JsonSerializer.Serialize(new {
+        type = "role",
+        side = playerIndex == 1 ? "white" : "black"
+    });
+    await socket.SendAsync(
+        new ArraySegment<byte>(Encoding.UTF8.GetBytes(roleMessage)),
+        WebSocketMessageType.Text,
+        true,
+        CancellationToken.None
+    );
     var buffer = new byte[1024 * 4];
     var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
     while (!result.CloseStatus.HasValue)

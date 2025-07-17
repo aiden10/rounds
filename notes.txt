@@ -22,7 +22,19 @@ Pages:
         [TextField] Join button
     - Game 
         Shows board and a chat box on the side
-        
+
+Components:
+    - Board
+        Should have the 2d board array as a prop so it automatically updates
+    - Piece
+    - Timer
+
+get fromSquare and toSquare
+do chess.move({from: fromSquare, to: toSquare})
+make moveRequest
+send moveRequest
+receive moveRequests
+
 Backend:
     type Room:
         id: string

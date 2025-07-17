@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CREATE_ROOM_ENDPOINT } from './constants';
+import { CREATE_ROOM_ENDPOINT } from '../shared/constants';
 
 export default function Home() {
   const [roomID, setRoomID] = useState("");
